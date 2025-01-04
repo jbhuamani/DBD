@@ -47,6 +47,9 @@ def main():
     # Step 2: Display Data
     if st.session_state.df is not None:
         df = st.session_state.df
+        st.write("Loaded Data:")
+        st.dataframe(df)  # Ensure the DataFrame is displayed
+
         st.write("Select a cell by entering its row and column:")
         
         # Input to select the row and column
