@@ -47,13 +47,17 @@ def main():
     # Step 2: Display Data
     if st.session_state.df is not None:
         df = st.session_state.df
-        st.write("Loaded Data:")
-        st.dataframe(df)  # Ensure the DataFrame is displayed
+
+        # Add 1-based indexing for display purposes
+        display_df = df.copy()
+        display_df.index = display_df.index + 1  # Shift the index to start from 1
+        st.write("Loaded Data (Row numbers start from 1):")
+        st.dataframe(display_df)
 
         st.write("Select a cell by entering its row and column:")
         
         # Input to select the row and column
-        row_index = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(df), step=1) - 1
+        row_index = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(display_df), step=1) - 1
         col_name = st.selectbox("Select column:", df.columns.tolist())
         
         # Display selected cell content
@@ -81,7 +85,9 @@ def main():
 
                 # Display updated DataFrame
                 st.write("Updated Data:")
-                st.dataframe(st.session_state.df)
+                updated_display_df = st.session_state.df.copy()
+                updated_display_df.index = updated_display_df.index + 1  # Shift index for display
+                st.dataframe(updated_display_df)
 
                 # Step 4: Download Updated File
                 buffer = BytesIO()
