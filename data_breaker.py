@@ -1,33 +1,31 @@
 import streamlit as st
 import pandas as pd
+import gdown
 from io import BytesIO
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
 
-def load_google_drive_sheet(sheet_id, range_name, credentials_secret):
-    """Load Google Sheet data using Google Drive API."""
-    creds = service_account.Credentials.from_service_account_info(st.secrets[credentials_secret])
-    service = build('sheets', 'v4', credentials=creds)
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
-    values = result.get('values', [])
-    return pd.DataFrame(values[1:], columns=values[0])
+def download_google_drive_file():
+    """Download file from Google Drive using gdown and link from secrets."""
+    # Get the Google Drive link from Streamlit secrets
+    drive_link = st.secrets["google_drive_link"]
+    # Convert the shareable link to a downloadable link
+    file_id = drive_link.split('/')[-2]
+    download_url = f"https://drive.google.com/uc?id={file_id}"
+    output_file = "temp.xlsx"
+    gdown.download(download_url, output_file, quiet=False)
+    return output_file
 
 def main():
     st.title("Data Breaker Program (DBD)")
     
     # Step 1: File Upload Section
-    upload_option = st.selectbox("Choose upload method", ["Google Drive", "Manual Upload"])
+    upload_option = st.selectbox("Choose upload method", ["Google Drive (Secret)", "Manual Upload"])
     df = None
     
-    if upload_option == "Google Drive":
-        st.text("Provide Google Sheet details:")
-        sheet_id = st.text_input("Google Sheet ID")
-        range_name = st.text_input("Range Name (e.g., 'Sheet1')")
-        credentials_secret = st.text_input("Secret Name in Streamlit", value="google_drive_secret")
+    if upload_option == "Google Drive (Secret)":
         if st.button("Load from Google Drive"):
             try:
-                df = load_google_drive_sheet(sheet_id, range_name, credentials_secret)
+                file_path = download_google_drive_file()
+                df = pd.read_excel(file_path)
                 st.success("Data loaded successfully!")
             except Exception as e:
                 st.error(f"Failed to load: {e}")
