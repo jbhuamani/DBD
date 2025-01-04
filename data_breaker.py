@@ -3,6 +3,9 @@ import pandas as pd
 import requests
 from io import BytesIO
 
+# Set the layout to "wide" to expand the program to fit the browser window
+st.set_page_config(layout="wide")
+
 def fetch_csv_from_drive():
     """Fetch the CSV file from Google Drive using the secret link."""
     csv_url = st.secrets["google_drive"]["csv_link"]
@@ -64,7 +67,21 @@ def main():
         table_html = render_table_with_line_breaks(display_df)
         st.markdown(
             f"""
-            <div style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+            <style>
+                /* Ensure scrollbars are visible */
+                .scrollable-table {{
+                    height: 400px;
+                    overflow-y: auto;
+                    overflow-x: auto;
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                }}
+                /* Set table width to 100% for responsiveness */
+                table {{
+                    width: 100%;
+                }}
+            </style>
+            <div class="scrollable-table">
                 {table_html}
             </div>
             """,
@@ -107,7 +124,7 @@ def main():
                 updated_table_html = render_table_with_line_breaks(updated_display_df)
                 st.markdown(
                     f"""
-                    <div style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                    <div class="scrollable-table">
                         {updated_table_html}
                     </div>
                     """,
