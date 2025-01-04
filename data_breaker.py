@@ -16,84 +16,55 @@ def main():
     # Initialize session state for storing data
     if "df" not in st.session_state:
         st.session_state.df = None
-    if "selected_row" not in st.session_state:
-        st.session_state.selected_row = None
-    if "selected_col" not in st.session_state:
-        st.session_state.selected_col = None
+    if "selected_cell" not in st.session_state:
+        st.session_state.selected_cell = None
 
     # Step 1: File Upload Section
-    upload_option = st.selectbox("Choose upload method", ["Google Drive (Secret)", "Manual Upload"])
-    
-    if upload_option == "Google Drive (Secret)":
-        if st.button("Load from Google Drive"):
-            try:
-                st.session_state.df = fetch_csv_from_drive()
-                st.success("Data loaded successfully!")
-            except Exception as e:
-                st.error(f"Failed to load: {e}")
-    
-    elif upload_option == "Manual Upload":
-        uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx", "csv"])
-        if uploaded_file:
-            try:
-                if uploaded_file.name.endswith(".xlsx"):
-                    st.session_state.df = pd.read_excel(uploaded_file)
-                else:
-                    st.session_state.df = pd.read_csv(uploaded_file)
-                st.success("File uploaded successfully!")
-            except Exception as e:
-                st.error(f"Error reading file: {e}")
+    if st.button("Load Data from Google Drive"):
+        try:
+            st.session_state.df = fetch_csv_from_drive()
+            st.success("Data loaded successfully!")
+        except Exception as e:
+            st.error(f"Failed to load: {e}")
 
     # Step 2: Display Data
     if st.session_state.df is not None:
-        df = st.session_state.df
         st.write("Loaded Data:")
-        st.dataframe(df)  # Ensure the DataFrame is displayed
+        edited_df = st.data_editor(st.session_state.df, key="data_editor", use_container_width=True)
+        st.session_state.df = edited_df  # Update DataFrame after editing
 
-        st.write("Select a cell by entering its row and column:")
-        
-        # Input to select the row and column
-        row_index = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(df), step=1) - 1
-        col_name = st.selectbox("Select column:", df.columns.tolist())
-        
-        # Display selected cell content
-        if row_index >= 0 and col_name:
-            selected_content = df.iloc[row_index][col_name]
-            st.write(f"Selected Content: {selected_content}")
+        # Step 3: Split Cell
+        if st.button("Split Cell"):
+            # Check if a single cell is selected
+            selected_data = st.session_state.get("data_editor")
+            if not selected_data or "selected_cell" not in selected_data:
+                st.warning("Please select a cell to split.")
+            else:
+                # Retrieve selected cell's row and column
+                selected_row = selected_data["selected_cell"]["row"]
+                selected_col = selected_data["selected_cell"]["col"]
+                selected_content = st.session_state.df.iloc[selected_row, selected_col]
 
-            # Step 3: Split Cell Logic
-            if st.button("Split Cell"):
-                selected_content = str(selected_content)  # Ensure it's a string
+                # Ensure the selected cell content is a string
+                selected_content = str(selected_content)
                 breakdown_lines = selected_content.split("\n")
-                
+
                 # Create new rows based on breakdown
                 new_rows = []
                 for line in breakdown_lines:
-                    new_row = df.iloc[row_index].copy()
-                    new_row[col_name] = line
+                    new_row = st.session_state.df.iloc[selected_row].copy()
+                    new_row[selected_col] = line
                     new_rows.append(new_row)
-                
+
                 # Drop the original row and add new rows
                 st.session_state.df = pd.concat(
-                    [df.drop(index=row_index), pd.DataFrame(new_rows)],
-                    ignore_index=True
+                    [st.session_state.df.drop(index=selected_row), pd.DataFrame(new_rows)],
+                    ignore_index=True,
                 )
 
                 # Display updated DataFrame
-                st.write("Updated Data:")
-                st.dataframe(st.session_state.df)
-
-                # Step 4: Download Updated File
-                buffer = BytesIO()
-                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-                    st.session_state.df.to_excel(writer, index=False)
-                buffer.seek(0)
-                st.download_button(
-                    label="Download Updated File",
-                    data=buffer,
-                    file_name="updated_data.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
+                st.success("Cell split successfully! Updated data:")
+                st.dataframe(st.session_state.df, use_container_width=True)
 
 if __name__ == "__main__":
     main()
