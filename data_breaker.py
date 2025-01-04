@@ -56,8 +56,8 @@ def main():
         display_df.index = display_df.index + 1  # Shift the index to start from 1
 
         st.write("Loaded Data (Row numbers start from 1):")
-        # Use st.table to display the data
-        st.table(display_df)
+        # Use st.dataframe to display the data interactively
+        st.dataframe(display_df, use_container_width=True)
 
         st.write("Select a cell by entering its row and column:")
         
@@ -90,7 +90,7 @@ def main():
 
                 # Display updated DataFrame
                 st.write("Updated Data:")
-                st.table(st.session_state.df)
+                st.dataframe(st.session_state.df, use_container_width=True)
 
                 # Step 4: Download Updated File
                 buffer = BytesIO()
