@@ -52,12 +52,53 @@ def main():
         display_df.index = display_df.index + 1  # Shift the index to start from 1
 
         st.write("Loaded Data (Row numbers start from 1):")
-        # Use st.dataframe to display the data interactively
         st.dataframe(display_df, use_container_width=True)
 
-        # Step 3: Advanced Splitting Option
+        # Split All Cells in a Column
+        st.write("Split All Cells in a Column Automatically")
+        col_name_split_all = st.selectbox("Select a column to split all multi-line cells:", df.columns.tolist(), key="split_all")
+
+        if col_name_split_all:
+            if st.button("Split All Cells in Column"):
+                # Prepare a list for new rows
+                new_rows = []
+
+                # Iterate over all rows
+                for _, row in df.iterrows():
+                    cell_content = str(row[col_name_split_all])  # Ensure cell content is a string
+                    if "\n" in cell_content:  # Check for multiple lines
+                        # Split the cell content and create a new row for each line
+                        lines = cell_content.split("\n")
+                        for line in lines:
+                            new_row = row.copy()
+                            new_row[col_name_split_all] = line
+                            new_rows.append(new_row)
+                    else:
+                        # Keep rows with single-line cells unchanged
+                        new_rows.append(row)
+
+                # Create updated DataFrame
+                st.session_state.df = pd.DataFrame(new_rows)
+
+                # Display updated DataFrame
+                st.write("Updated Data (After Splitting All Multi-Line Cells):")
+                st.dataframe(st.session_state.df, use_container_width=True)
+
+                # Download Updated File
+                buffer = BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    st.session_state.df.to_excel(writer, index=False)
+                buffer.seek(0)
+                st.download_button(
+                    label="Download Updated File (Split All Cells)",
+                    data=buffer,
+                    file_name="updated_data_split_all.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+
+        # Advanced Splitting Option
         st.write("Advanced Splitting Option")
-        col_name = st.selectbox("Select a column to split based on a string:", df.columns.tolist())
+        col_name_advanced = st.selectbox("Select a column to split based on a string:", df.columns.tolist(), key="advanced_split")
         search_string = st.text_input("Enter the string to search for in the selected column:")
         num_splits = st.number_input("Specify the number of rows to split the cell into:", min_value=2, step=1, value=3)
 
@@ -67,19 +108,19 @@ def main():
             value = st.text_input(f"Enter value for split section {i + 1}:", key=f"split_value_{i}")
             split_values.append(value)
 
-        if col_name and search_string and len(split_values) == num_splits:
+        if col_name_advanced and search_string and len(split_values) == num_splits:
             if st.button("Split Column by String"):
                 # Prepare a list for new rows
                 new_rows = []
 
                 # Iterate over all rows
                 for _, row in df.iterrows():
-                    cell_content = str(row[col_name])  # Ensure cell content is a string
+                    cell_content = str(row[col_name_advanced])  # Ensure cell content is a string
                     if search_string in cell_content:  # Check for the search string
                         # Split the cell into specified sections
                         for split_value in split_values:
                             new_row = row.copy()
-                            new_row[col_name] = split_value
+                            new_row[col_name_advanced] = split_value
                             new_rows.append(new_row)
                     else:
                         # Keep rows without the search string unchanged
@@ -89,18 +130,18 @@ def main():
                 st.session_state.df = pd.DataFrame(new_rows)
 
                 # Display updated DataFrame
-                st.write("Updated Data:")
+                st.write("Updated Data (After Advanced Splitting):")
                 st.dataframe(st.session_state.df, use_container_width=True)
 
-                # Step 4: Download Updated File
+                # Download Updated File
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     st.session_state.df.to_excel(writer, index=False)
                 buffer.seek(0)
                 st.download_button(
-                    label="Download Updated File",
+                    label="Download Updated File (Advanced Splitting)",
                     data=buffer,
-                    file_name="updated_data.xlsx",
+                    file_name="updated_data_advanced_split.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
 
