@@ -64,7 +64,7 @@ def main():
         table_html = render_table_with_line_breaks(display_df)
         st.markdown(
             f"""
-            <div style="overflow-x: auto; white-space: nowrap;">
+            <div style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
                 {table_html}
             </div>
             """,
@@ -107,7 +107,7 @@ def main():
                 updated_table_html = render_table_with_line_breaks(updated_display_df)
                 st.markdown(
                     f"""
-                    <div style="overflow-x: auto; white-space: nowrap;">
+                    <div style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
                         {updated_table_html}
                     </div>
                     """,
