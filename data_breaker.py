@@ -1,18 +1,15 @@
-import streamlit as st
+\import streamlit as st
 import pandas as pd
-import gdown
 from io import BytesIO
+import requests
 
-def download_google_drive_file():
-    """Download file from Google Drive using gdown and link from secrets."""
+def fetch_csv_from_drive():
+    """Fetch the CSV file from Google Drive using the secret link."""
     # Get the Google Drive link from Streamlit secrets
-    drive_link = st.secrets["google_drive_link"]
-    # Convert the shareable link to a downloadable link
-    file_id = drive_link.split('/')[-2]
-    download_url = f"https://drive.google.com/uc?id={file_id}"
-    output_file = "temp.xlsx"
-    gdown.download(download_url, output_file, quiet=False)
-    return output_file
+    csv_url = st.secrets["google_drive_csv"]
+    response = requests.get(csv_url)
+    response.raise_for_status()  # Raise error if the request fails
+    return pd.read_csv(BytesIO(response.content))
 
 def main():
     st.title("Data Breaker Program (DBD)")
@@ -24,8 +21,7 @@ def main():
     if upload_option == "Google Drive (Secret)":
         if st.button("Load from Google Drive"):
             try:
-                file_path = download_google_drive_file()
-                df = pd.read_excel(file_path)
+                df = fetch_csv_from_drive()
                 st.success("Data loaded successfully!")
             except Exception as e:
                 st.error(f"Failed to load: {e}")
