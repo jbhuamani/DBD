@@ -16,6 +16,10 @@ def main():
     # Initialize session state for storing data
     if "df" not in st.session_state:
         st.session_state.df = None
+    if "selected_row" not in st.session_state:
+        st.session_state.selected_row = None
+    if "selected_col" not in st.session_state:
+        st.session_state.selected_col = None
 
     # Step 1: File Upload Section
     upload_option = st.selectbox("Choose upload method", ["Google Drive (Secret)", "Manual Upload"])
@@ -43,26 +47,24 @@ def main():
     # Step 2: Display Data
     if st.session_state.df is not None:
         df = st.session_state.df
-        st.write("Data Preview:")
-        st.dataframe(df)
+        st.write("Click on a cell to select it:")
+        selected_cell = st.experimental_data_editor(df, key="data_editor", num_rows="dynamic")
 
-        # Step 3: Cell Selection
-        cell_action = st.radio("Choose action:", ["Click a Cell", "Enter Cell Content"])
-        selected_row = None
-        selected_col = None
-        selected_cell_content = None
+        # Detect the selected cell
+        if selected_cell:
+            st.session_state.selected_row = selected_cell.get("selected_row")
+            st.session_state.selected_col = selected_cell.get("selected_col")
 
-        if cell_action == "Click a Cell":
-            selected_row = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(df), step=1) - 1
-            selected_col = st.selectbox("Select column:", df.columns.tolist())
-            selected_cell_content = df.iloc[selected_row][selected_col]
-            st.write(f"Selected Content: {selected_cell_content}")
+        if st.session_state.selected_row is not None and st.session_state.selected_col is not None:
+            selected_row = st.session_state.selected_row
+            selected_col = st.session_state.selected_col
+            selected_content = df.iloc[selected_row, selected_col]
+            st.write(f"Selected Content: {selected_content}")
 
-            # Step 4: Split Cell Logic
+            # Step 3: Split Cell Logic
             if st.button("Split Cell"):
-                # Ensure the selected cell content is treated as a string
-                selected_cell_content = str(selected_cell_content)
-                breakdown_lines = selected_cell_content.split("\n")
+                selected_content = str(selected_content)  # Ensure it's a string
+                breakdown_lines = selected_content.split("\n")
                 
                 # Create new rows based on breakdown
                 new_rows = []
@@ -81,7 +83,7 @@ def main():
                 st.write("Updated Data:")
                 st.dataframe(st.session_state.df)
 
-                # Step 5: Download Updated File
+                # Step 4: Download Updated File
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     st.session_state.df.to_excel(writer, index=False)
@@ -92,11 +94,6 @@ def main():
                     file_name="updated_data.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
-        
-        elif cell_action == "Enter Cell Content":
-            selected_cell_content = st.text_area("Enter content to break down:")
-            if st.button("Split Cell"):
-                st.error("Manual entry not yet implemented.")
 
 if __name__ == "__main__":
     main()
