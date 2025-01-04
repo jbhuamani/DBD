@@ -13,13 +13,6 @@ def fetch_csv_from_drive():
     response.raise_for_status()
     return pd.read_csv(BytesIO(response.content))
 
-def render_table_with_line_breaks(df):
-    """Render a DataFrame with line breaks preserved in cells."""
-    styled_df = df.copy()
-    # Replace newlines in cells with <br> for HTML rendering
-    styled_df = styled_df.applymap(lambda x: str(x).replace("\n", "<br>") if isinstance(x, str) else x)
-    return styled_df.to_html(escape=False, index=False)
-
 def main():
     st.title("Data Breaker Program (DBD)")
 
@@ -63,30 +56,8 @@ def main():
         display_df.index = display_df.index + 1  # Shift the index to start from 1
 
         st.write("Loaded Data (Row numbers start from 1):")
-        # Use custom table rendering to preserve line breaks
-        table_html = render_table_with_line_breaks(display_df)
-        st.markdown(
-            f"""
-            <style>
-                /* Ensure scrollbars are visible */
-                .scrollable-table {{
-                    height: 400px;
-                    overflow-y: auto;
-                    overflow-x: auto;
-                    border: 1px solid #ddd;
-                    padding: 10px;
-                }}
-                /* Set table width to 100% for responsiveness */
-                table {{
-                    width: 100%;
-                }}
-            </style>
-            <div class="scrollable-table">
-                {table_html}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Use st.table to display the data
+        st.table(display_df)
 
         st.write("Select a cell by entering its row and column:")
         
@@ -119,17 +90,7 @@ def main():
 
                 # Display updated DataFrame
                 st.write("Updated Data:")
-                updated_display_df = st.session_state.df.copy()
-                updated_display_df.index = updated_display_df.index + 1  # Shift index for display
-                updated_table_html = render_table_with_line_breaks(updated_display_df)
-                st.markdown(
-                    f"""
-                    <div class="scrollable-table">
-                        {updated_table_html}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                st.table(st.session_state.df)
 
                 # Step 4: Download Updated File
                 buffer = BytesIO()
