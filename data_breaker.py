@@ -6,7 +6,7 @@ from io import BytesIO
 def fetch_csv_from_drive():
     """Fetch the CSV file from Google Drive using the secret link."""
     # Get the Google Drive link from Streamlit secrets
-    csv_url = st.secrets["google_drive_csv"]
+    csv_url = st.secrets["google_drive"]["csv_link"]
     response = requests.get(csv_url)
     response.raise_for_status()  # Raise error if the request fails
     return pd.read_csv(BytesIO(response.content))
