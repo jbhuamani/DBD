@@ -53,16 +53,19 @@ def main():
             
             # Step 4: Process Breakdown
             breakdown_lines = selected_cell_content.split("\n")
-            updated_df = pd.DataFrame()
+            updated_rows = []
             for _, row in df.iterrows():
                 row_data = row.to_dict()
                 if str(row[selected_col]) == selected_cell_content:
                     for line in breakdown_lines:
                         new_row = row_data.copy()
                         new_row[selected_col] = line
-                        updated_df = updated_df.append(new_row, ignore_index=True)
+                        updated_rows.append(new_row)
                 else:
-                    updated_df = updated_df.append(row, ignore_index=True)
+                    updated_rows.append(row_data)
+            
+            # Create updated DataFrame using pd.DataFrame
+            updated_df = pd.DataFrame(updated_rows)
             
             st.write("Updated Data:")
             st.dataframe(updated_df)
