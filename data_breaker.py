@@ -12,15 +12,18 @@ def fetch_csv_from_drive():
 
 def main():
     st.title("Data Breaker Program (DBD)")
-    
+
+    # Initialize session state for storing data
+    if "df" not in st.session_state:
+        st.session_state.df = None
+
     # Step 1: File Upload Section
     upload_option = st.selectbox("Choose upload method", ["Google Drive (Secret)", "Manual Upload"])
-    df = None
     
     if upload_option == "Google Drive (Secret)":
         if st.button("Load from Google Drive"):
             try:
-                df = fetch_csv_from_drive()
+                st.session_state.df = fetch_csv_from_drive()
                 st.success("Data loaded successfully!")
             except Exception as e:
                 st.error(f"Failed to load: {e}")
@@ -28,29 +31,33 @@ def main():
     elif upload_option == "Manual Upload":
         uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx", "csv"])
         if uploaded_file:
-            if uploaded_file.name.endswith(".xlsx"):
-                df = pd.read_excel(uploaded_file)
-            else:
-                df = pd.read_csv(uploaded_file)
-            st.success("File uploaded successfully!")
-    
+            try:
+                if uploaded_file.name.endswith(".xlsx"):
+                    st.session_state.df = pd.read_excel(uploaded_file)
+                else:
+                    st.session_state.df = pd.read_csv(uploaded_file)
+                st.success("File uploaded successfully!")
+            except Exception as e:
+                st.error(f"Error reading file: {e}")
+
     # Step 2: Display Data
-    if df is not None:
+    if st.session_state.df is not None:
+        df = st.session_state.df
         st.write("Data Preview:")
         st.dataframe(df)
-        
+
         # Step 3: Cell Selection
         cell_action = st.radio("Choose action:", ["Click a Cell", "Enter Cell Content"])
         selected_row = None
         selected_col = None
         selected_cell_content = None
-        
+
         if cell_action == "Click a Cell":
             selected_row = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(df), step=1) - 1
             selected_col = st.selectbox("Select column:", df.columns.tolist())
             selected_cell_content = df.iloc[selected_row][selected_col]
             st.write(f"Selected Content: {selected_cell_content}")
-            
+
             # Step 4: Split Cell Logic
             if st.button("Split Cell"):
                 # Ensure the selected cell content is treated as a string
@@ -65,16 +72,19 @@ def main():
                     new_rows.append(new_row)
                 
                 # Drop the original row and add new rows
-                df = pd.concat([df.drop(index=selected_row), pd.DataFrame(new_rows)], ignore_index=True)
-                
+                st.session_state.df = pd.concat(
+                    [df.drop(index=selected_row), pd.DataFrame(new_rows)],
+                    ignore_index=True
+                )
+
                 # Display updated DataFrame
                 st.write("Updated Data:")
-                st.dataframe(df)
-                
+                st.dataframe(st.session_state.df)
+
                 # Step 5: Download Updated File
                 buffer = BytesIO()
-                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                    df.to_excel(writer, index=False)
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    st.session_state.df.to_excel(writer, index=False)
                 buffer.seek(0)
                 st.download_button(
                     label="Download Updated File",
