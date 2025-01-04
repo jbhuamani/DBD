@@ -43,7 +43,7 @@ def main():
             except Exception as e:
                 st.error(f"Error reading file: {e}")
 
-    # Step 2: Display Data with Filtering and Split Cell Functionality
+    # Step 2: Display Data
     if st.session_state.df is not None:
         df = st.session_state.df
 
@@ -52,48 +52,37 @@ def main():
         display_df.index = display_df.index + 1  # Shift the index to start from 1
 
         st.write("Loaded Data (Row numbers start from 1):")
-        
-        # Create filter options for each column
-        filtered_df = display_df.copy()
-        for col in display_df.columns:
-            unique_values = display_df[col].dropna().unique().tolist()
-            unique_values.sort()  # Sort values for better usability
-            selected_value = st.selectbox(
-                f"Filter by {col}:",
-                options=["All"] + unique_values,
-                key=f"filter_{col}"
-            )
-            if selected_value != "All":
-                filtered_df = filtered_df[filtered_df[col] == selected_value]
+        # Use st.dataframe to display the data interactively
+        st.dataframe(display_df, use_container_width=True)
 
-        # Display the filtered DataFrame
-        st.dataframe(filtered_df, use_container_width=True)
+        # Step 3: Advanced Splitting Option
+        st.write("Advanced Splitting Option")
+        col_name = st.selectbox("Select a column to split based on a string:", df.columns.tolist())
+        search_string = st.text_input("Enter the string to search for in the selected column:")
+        num_splits = st.number_input("Specify the number of rows to split the cell into:", min_value=2, step=1, value=3)
 
-        # Step 3: Split Cell Functionality
-        st.write("Split Cell Functionality")
-        col_name = st.selectbox("Select a column to split:", df.columns.tolist())
+        # Collect values for each section of the split
+        split_values = []
+        for i in range(num_splits):
+            value = st.text_input(f"Enter value for split section {i + 1}:", key=f"split_value_{i}")
+            split_values.append(value)
 
-        if col_name:
-            # Display selected column's content
-            st.write(f"Selected Column: **{col_name}**")
-            
-            # Step 4: Split Entire Column Logic
-            if st.button("Split Column"):
+        if col_name and search_string and len(split_values) == num_splits:
+            if st.button("Split Column by String"):
                 # Prepare a list for new rows
                 new_rows = []
 
                 # Iterate over all rows
                 for _, row in df.iterrows():
                     cell_content = str(row[col_name])  # Ensure cell content is a string
-                    if "\n" in cell_content:  # Check for multiple lines
-                        # Split the cell content and create a new row for each line
-                        lines = cell_content.split("\n")
-                        for line in lines:
+                    if search_string in cell_content:  # Check for the search string
+                        # Split the cell into specified sections
+                        for split_value in split_values:
                             new_row = row.copy()
-                            new_row[col_name] = line
+                            new_row[col_name] = split_value
                             new_rows.append(new_row)
                     else:
-                        # Keep rows with single-line cells unchanged
+                        # Keep rows without the search string unchanged
                         new_rows.append(row)
 
                 # Create updated DataFrame
@@ -103,7 +92,7 @@ def main():
                 st.write("Updated Data:")
                 st.dataframe(st.session_state.df, use_container_width=True)
 
-                # Step 5: Download Updated File
+                # Step 4: Download Updated File
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     st.session_state.df.to_excel(writer, index=False)
@@ -114,22 +103,6 @@ def main():
                     file_name="updated_data.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
-
-        # Option to reset the filters
-        if st.button("Reset Filters"):
-            st.experimental_rerun()
-
-        # Step 6: Download Filtered Data
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            filtered_df.to_excel(writer, index=False)
-        buffer.seek(0)
-        st.download_button(
-            label="Download Filtered File",
-            data=buffer,
-            file_name="filtered_data.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
 
 if __name__ == "__main__":
     main()
