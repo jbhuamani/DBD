@@ -47,18 +47,15 @@ def main():
     # Step 2: Display Data
     if st.session_state.df is not None:
         df = st.session_state.df
-        st.write("Click on a cell to select it:")
-        selected_cell = st.experimental_data_editor(df, key="data_editor", num_rows="dynamic")
-
-        # Detect the selected cell
-        if selected_cell:
-            st.session_state.selected_row = selected_cell.get("selected_row")
-            st.session_state.selected_col = selected_cell.get("selected_col")
-
-        if st.session_state.selected_row is not None and st.session_state.selected_col is not None:
-            selected_row = st.session_state.selected_row
-            selected_col = st.session_state.selected_col
-            selected_content = df.iloc[selected_row, selected_col]
+        st.write("Select a cell by entering its row and column:")
+        
+        # Input to select the row and column
+        row_index = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(df), step=1) - 1
+        col_name = st.selectbox("Select column:", df.columns.tolist())
+        
+        # Display selected cell content
+        if row_index >= 0 and col_name:
+            selected_content = df.iloc[row_index][col_name]
             st.write(f"Selected Content: {selected_content}")
 
             # Step 3: Split Cell Logic
@@ -69,13 +66,13 @@ def main():
                 # Create new rows based on breakdown
                 new_rows = []
                 for line in breakdown_lines:
-                    new_row = df.iloc[selected_row].copy()
-                    new_row[selected_col] = line
+                    new_row = df.iloc[row_index].copy()
+                    new_row[col_name] = line
                     new_rows.append(new_row)
                 
                 # Drop the original row and add new rows
                 st.session_state.df = pd.concat(
-                    [df.drop(index=selected_row), pd.DataFrame(new_rows)],
+                    [df.drop(index=row_index), pd.DataFrame(new_rows)],
                     ignore_index=True
                 )
 
