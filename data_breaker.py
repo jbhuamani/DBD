@@ -16,10 +16,12 @@ def main():
     # Initialize session state for storing data
     if "df" not in st.session_state:
         st.session_state.df = None
-    if "selected_cell" not in st.session_state:
-        st.session_state.selected_cell = None
+    if "selected_row" not in st.session_state:
+        st.session_state.selected_row = None
+    if "selected_col" not in st.session_state:
+        st.session_state.selected_col = None
 
-    # Step 1: File Upload Section
+    # Step 1: Load Data
     if st.button("Load Data from Google Drive"):
         try:
             st.session_state.df = fetch_csv_from_drive()
@@ -30,20 +32,15 @@ def main():
     # Step 2: Display Data
     if st.session_state.df is not None:
         st.write("Loaded Data:")
-        edited_df = st.data_editor(st.session_state.df, key="data_editor", use_container_width=True)
-        st.session_state.df = edited_df  # Update DataFrame after editing
+        # Display the current DataFrame
+        st.session_state.df = pd.DataFrame(st.session_state.df)  # Ensure DataFrame integrity
+        selected_row = st.selectbox("Select Row (Index):", options=st.session_state.df.index)
+        selected_col = st.selectbox("Select Column:", options=st.session_state.df.columns)
 
         # Step 3: Split Cell
         if st.button("Split Cell"):
-            # Check if a single cell is selected
-            selected_data = st.session_state.get("data_editor")
-            if not selected_data or "selected_cell" not in selected_data:
-                st.warning("Please select a cell to split.")
-            else:
-                # Retrieve selected cell's row and column
-                selected_row = selected_data["selected_cell"]["row"]
-                selected_col = selected_data["selected_cell"]["col"]
-                selected_content = st.session_state.df.iloc[selected_row, selected_col]
+            try:
+                selected_content = st.session_state.df.loc[selected_row, selected_col]
 
                 # Ensure the selected cell content is a string
                 selected_content = str(selected_content)
@@ -52,7 +49,7 @@ def main():
                 # Create new rows based on breakdown
                 new_rows = []
                 for line in breakdown_lines:
-                    new_row = st.session_state.df.iloc[selected_row].copy()
+                    new_row = st.session_state.df.loc[selected_row].copy()
                     new_row[selected_col] = line
                     new_rows.append(new_row)
 
@@ -65,6 +62,9 @@ def main():
                 # Display updated DataFrame
                 st.success("Cell split successfully! Updated data:")
                 st.dataframe(st.session_state.df, use_container_width=True)
+
+            except Exception as e:
+                st.error(f"Error splitting cell: {e}")
 
 if __name__ == "__main__":
     main()
