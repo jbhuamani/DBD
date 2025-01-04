@@ -3,11 +3,6 @@ import pandas as pd
 import requests
 from io import BytesIO
 
-try:
-    import xlsxwriter
-except ImportError:
-    st.error("The `xlsxwriter` library is missing. Please install it by running `pip install xlsxwriter`.")
-
 def fetch_csv_from_drive():
     """Fetch the CSV file from Google Drive using the secret link."""
     csv_url = st.secrets["google_drive"]["csv_link"]
