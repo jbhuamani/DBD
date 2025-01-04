@@ -19,10 +19,6 @@ def main():
     # Initialize session state for storing data
     if "df" not in st.session_state:
         st.session_state.df = None
-    if "selected_row" not in st.session_state:
-        st.session_state.selected_row = None
-    if "selected_col" not in st.session_state:
-        st.session_state.selected_col = None
 
     # Step 1: File Upload Section
     upload_option = st.selectbox("Choose upload method", ["Google Drive (Secret)", "Manual Upload"])
@@ -59,40 +55,41 @@ def main():
         # Use st.dataframe to display the data interactively
         st.dataframe(display_df, use_container_width=True)
 
-        st.write("Select a cell by entering its row and column:")
-        
-        # Input to select the row and column
-        row_index = st.number_input("Enter row number (1-indexed):", min_value=1, max_value=len(display_df), step=1) - 1
+        # Step 3: Select Column for Splitting
+        st.write("Select a column to split all cells with multiple lines:")
         col_name = st.selectbox("Select column:", df.columns.tolist())
-        
-        # Display selected cell content
-        if row_index >= 0 and col_name:
-            selected_content = df.iloc[row_index][col_name]
-            st.write(f"Selected Content: {selected_content}")
 
-            # Step 3: Split Cell Logic
-            if st.button("Split Cell"):
-                selected_content = str(selected_content)  # Ensure it's a string
-                breakdown_lines = selected_content.split("\n")
-                
-                # Create new rows based on breakdown
+        if col_name:
+            # Display selected column's content
+            st.write(f"Selected Column: **{col_name}**")
+            
+            # Step 4: Split Entire Column Logic
+            if st.button("Split Column"):
+                # Prepare a list for new rows
                 new_rows = []
-                for line in breakdown_lines:
-                    new_row = df.iloc[row_index].copy()
-                    new_row[col_name] = line
-                    new_rows.append(new_row)
-                
-                # Drop the original row and add new rows
-                st.session_state.df = pd.concat(
-                    [df.drop(index=row_index), pd.DataFrame(new_rows)],
-                    ignore_index=True
-                )
+
+                # Iterate over all rows
+                for _, row in df.iterrows():
+                    cell_content = str(row[col_name])  # Ensure cell content is a string
+                    if "\n" in cell_content:  # Check for multiple lines
+                        # Split the cell content and create a new row for each line
+                        lines = cell_content.split("\n")
+                        for line in lines:
+                            new_row = row.copy()
+                            new_row[col_name] = line
+                            new_rows.append(new_row)
+                    else:
+                        # Keep rows with single-line cells unchanged
+                        new_rows.append(row)
+
+                # Create updated DataFrame
+                st.session_state.df = pd.DataFrame(new_rows)
 
                 # Display updated DataFrame
                 st.write("Updated Data:")
                 st.dataframe(st.session_state.df, use_container_width=True)
 
-                # Step 4: Download Updated File
+                # Step 5: Download Updated File
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     st.session_state.df.to_excel(writer, index=False)
