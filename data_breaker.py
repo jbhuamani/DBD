@@ -1,7 +1,7 @@
-\import streamlit as st
+import streamlit as st
 import pandas as pd
-from io import BytesIO
 import requests
+from io import BytesIO
 
 def fetch_csv_from_drive():
     """Fetch the CSV file from Google Drive using the secret link."""
