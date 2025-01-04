@@ -43,7 +43,7 @@ def main():
             except Exception as e:
                 st.error(f"Error reading file: {e}")
 
-    # Step 2: Display Data with Filtering
+    # Step 2: Display Data with Filtering and Split Cell Functionality
     if st.session_state.df is not None:
         df = st.session_state.df
 
@@ -69,11 +69,57 @@ def main():
         # Display the filtered DataFrame
         st.dataframe(filtered_df, use_container_width=True)
 
+        # Step 3: Split Cell Functionality
+        st.write("Split Cell Functionality")
+        col_name = st.selectbox("Select a column to split:", df.columns.tolist())
+
+        if col_name:
+            # Display selected column's content
+            st.write(f"Selected Column: **{col_name}**")
+            
+            # Step 4: Split Entire Column Logic
+            if st.button("Split Column"):
+                # Prepare a list for new rows
+                new_rows = []
+
+                # Iterate over all rows
+                for _, row in df.iterrows():
+                    cell_content = str(row[col_name])  # Ensure cell content is a string
+                    if "\n" in cell_content:  # Check for multiple lines
+                        # Split the cell content and create a new row for each line
+                        lines = cell_content.split("\n")
+                        for line in lines:
+                            new_row = row.copy()
+                            new_row[col_name] = line
+                            new_rows.append(new_row)
+                    else:
+                        # Keep rows with single-line cells unchanged
+                        new_rows.append(row)
+
+                # Create updated DataFrame
+                st.session_state.df = pd.DataFrame(new_rows)
+
+                # Display updated DataFrame
+                st.write("Updated Data:")
+                st.dataframe(st.session_state.df, use_container_width=True)
+
+                # Step 5: Download Updated File
+                buffer = BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    st.session_state.df.to_excel(writer, index=False)
+                buffer.seek(0)
+                st.download_button(
+                    label="Download Updated File",
+                    data=buffer,
+                    file_name="updated_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+
         # Option to reset the filters
         if st.button("Reset Filters"):
             st.experimental_rerun()
 
-        # Step 3: Download Filtered Data
+        # Step 6: Download Filtered Data
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
             filtered_df.to_excel(writer, index=False)
